@@ -1,0 +1,53 @@
+[
+    {
+      "id": 1,
+      "nickname": "IvanovAlex",
+      "password": "password123"
+    },
+    {
+      "id": 2,
+      "nickname": "Dmitry_V",
+      "password": "qwerty456"
+    },
+    {
+      "id": 3,
+      "nickname": "Maria_Smith",
+      "password": "1234abcd"
+    },
+    {
+      "id": 4,
+      "nickname": "Olga_Novik",
+      "password": "abc1234"
+    },
+    {
+      "id": 5,
+      "nickname": "Sergio_Rodriguez",
+      "password": "ilovecoding789"
+    },
+    {
+      "id": 6,
+      "nickname": "Petr_Prokopov",
+      "password": "securePass123"
+    },
+    {
+      "id": 7,
+      "nickname": "Natalia_Tech",
+      "password": "mypassword987"
+    },
+    {
+      "id": 8,
+      "nickname": "Alex_Kaplan",
+      "password": "testing321"
+    },
+    {
+      "id": 9,
+      "nickname": "Vera_Martin",
+      "password": "complexPassword2024"
+    },
+    {
+      "id": 10,
+      "nickname": "Nika",
+      "password": "777"
+    }
+  ]
+  

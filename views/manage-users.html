@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Manage User Accounts</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background-color: #f0f8ff;
+      padding: 20px;
+    }
+    h1 {
+      text-align: center;
+      color: #004d40;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 20px;
+    }
+    th, td {
+      padding: 10px;
+      text-align: center;
+      border: 1px solid #ccc;
+    }
+    th {
+      background-color: #00796b;
+      color: white;
+    }
+    tr:nth-child(even) {
+      background-color: #e0f2f1;
+    }
+    .button {
+      background-color: #00796b;
+      color: white;
+      padding: 5px 10px;
+      border: none;
+      cursor: pointer;
+    }
+    .button:hover {
+      background-color: #004d40;
+    }
+    #userModal {
+      display: none;
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      background-color: white;
+      padding: 20px;
+      border: 1px solid #ccc;
+      z-index: 1000;
+    }
+    .modal-close {
+      background-color: #00796b;
+      color: white;
+      padding: 5px 10px;
+      margin-top: 10px;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+  <h1>Manage User Accounts</h1>
+  
+  <button class="button" onclick="openUserModal()">Add New User</button>
+  
+  <table>
+    <thead>
+      <tr>
+        <th>Nickname</th>
+        <th>Password</th>
+        <th>Actions</th>
+      </tr>
+    </thead>
+    <tbody id="userTable"></tbody>
+  </table>
+
+  <div id="userModal">
+    <h2 id="modalTitle">Add/Edit User</h2>
+    <form id="userForm" onsubmit="handleUserFormSubmit(event)">
+      <input type="hidden" id="userId">
+      <div>
+        <label>Nickname:</label>
+        <input type="text" id="nickname" required>
+      </div>
+      <div>
+        <label>Password:</label>
+        <input type="password" id="password" required>
+      </div>
+      <button type="submit" class="button">Save</button>
+    </form>
+    <button class="modal-close" onclick="closeUserModal()">Close</button>
+  </div>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      loadUsers();
+    });
+
+    // Load users from the server
+    async function loadUsers() {
+      try {
+        const response = await fetch('/admin/users');
+        if (!response.ok) throw new Error('Failed to fetch users');
+        
+        const users = await response.json();
+        const userTable = document.getElementById('userTable');
+        userTable.innerHTML = '';
+
+        if (users.length === 0) {
+          userTable.innerHTML = `<tr><td colspan="3">No users found</td></tr>`;
+        } else {
+          users.forEach((user) => {
+            const row = document.createElement('tr');
+            row.innerHTML = `
+              <td>${user.nickname}</td>
+              <td>${user.password}</td>
+              <td>
+                <button class="button" onclick="editUser('${user._id}', '${user.nickname}', '${user.password}')">Edit</button>
+                <button class="button" onclick="deleteUser('${user._id}')">Delete</button>
+              </td>
+            `;
+            userTable.appendChild(row);
+          });
+        }
+      } catch (error) {
+        console.error('Error loading users:', error);
+      }
+    }
+
+    // Open modal to add or edit user
+    function openUserModal(user = null) {
+      document.getElementById('userForm').reset();
+      document.getElementById('userId').value = user ? user._id : '';
+      document.getElementById('nickname').value = user ? user.nickname : '';
+      document.getElementById('password').value = user ? user.password : '';
+      document.getElementById('modalTitle').textContent = user ? 'Edit User' : 'Add User';
+      document.getElementById('userModal').style.display = 'block';
+    }
+
+    function closeUserModal() {
+      document.getElementById('userModal').style.display = 'none';
+    }
+
+    // Handle form submission for adding or editing user
+    async function handleUserFormSubmit(event) {
+      event.preventDefault();
+
+      const userId = document.getElementById('userId').value;
+      const nickname = document.getElementById('nickname').value;
+      const password = document.getElementById('password').value;
+
+      const method = userId ? 'PUT' : 'POST';
+      const url = userId ? `/admin/users/${userId}` : '/admin/users';
+
+      try {
+        const response = await fetch(url, {
+          method,
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ nickname, password }),
+        });
+
+        if (response.ok) {
+          closeUserModal();
+          loadUsers();
+        } else {
+          const error = await response.json();
+          alert(`Error: ${error.message}`);
+        }
+      } catch (error) {
+        console.error('Error saving user:', error);
+      }
+    }
+
+    // Edit user
+    function editUser(id, nickname, password) {
+      openUserModal({ _id: id, nickname, password });
+    }
+
+    // Delete user
+    async function deleteUser(id) {
+      if (confirm('Are you sure you want to delete this user?')) {
+        try {
+          const response = await fetch(`/admin/users/${id}`, { method: 'DELETE' });
+          if (response.ok) {
+            loadUsers();
+          } else {
+            const error = await response.json();
+            alert(`Error: ${error.message}`);
+          }
+        } catch (error) {
+          console.error('Error deleting user:', error);
+        }
+      }
+    }
+  </script>
+</body>
+</html>
+

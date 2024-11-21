@@ -1,0 +1,324 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin Dashboard</title>
+   
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background-color: #f0f8ff;
+      padding: 20px;
+    }
+    h1 {
+      text-align: center;
+      color: #004d40;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 20px;
+    }
+    th {
+      background-color: #00796b;
+      color: white;
+      padding: 10px;
+    }
+    td {
+      padding: 10px;
+      text-align: center;
+    }
+    tr:nth-child(even) {
+      background-color: #e0f2f1;
+    }
+    .button {
+      background-color: #00796b;
+      color: white;
+      padding: 5px 10px;
+      border: none;
+      cursor: pointer;
+    }
+    .button:hover {
+      background-color: #004d40;
+    }
+    #modal, #editModal {
+      display: none;
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      background-color: white;
+      padding: 20px;
+      border: 1px solid #ccc;
+      box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+      z-index: 1000;
+    }
+    #modal-close, #editModal-close {
+      margin-top: 10px;
+      background-color: #00796b;
+      color: white;
+      padding: 5px 10px;
+      cursor: pointer;
+    }
+    #notesList {
+      list-style-type: none;
+      padding-left: 0;
+    }
+    #notesList li {
+      margin: 5px 0;
+    }
+  </style>
+</head>
+<body>
+  <h1>Admin Dashboard - Personnel Information</h1>
+
+
+  <!-- Уведомление -->
+  <div id="notification" style="display: none; background-color: #4caf50; color: white; padding: 10px; margin-bottom: 20px; text-align: center;">
+    Personnel added successfully!
+  </div>
+
+   
+
+<!-- Search Box -->
+<div class="search-box">
+  <input type="text" id="searchInput" placeholder="Search by name or surname" onkeyup="searchPersonnel()">
+</div>
+
+
+  <button class="button" onclick="window.location.href = '/admin/add-personnel'">Add New Personnel</button>
+  <table>
+    <thead>
+      <tr>
+        <th>Name</th>
+        <th>Surname</th>
+        <th>Unit</th>
+        <th>Rank</th>
+        <th>Actions</th>
+      </tr>
+    </thead>
+    <tbody id="personnelTable"></tbody>
+  </table>
+  
+
+
+   
+
+  <div id="editModal">
+    <h2>Edit Personnel</h2>
+    <form id="editPersonnelForm" onsubmit="updatePersonnel(event)">
+      <input type="hidden" name="id" id="edit-id">
+      <div class="form-group">
+        <label>Name:</label>
+        <input type="text" name="name" id="edit-name" class="input-field" required>
+      </div>
+      <div class="form-group">
+        <label>Surname:</label>
+        <input type="text" name="surname" id="edit-surname" class="input-field" required>
+      </div>
+      <div class="form-group">
+        <label>Gender:</label>
+        <input type="text" name="gender" id="edit-gender" class="input-field" required>
+      </div>
+      <div class="form-group">
+        <label>Birthday:</label>
+        <input type="date" name="birthday" id="edit-birthday" class="input-field" required>
+      </div>
+      <div class="form-group">
+        <label>Unit:</label>
+        <input type="text" name="unit" id="edit-unit" class="input-field" required>
+      </div>
+      <div class="form-group">
+        <label>Rank:</label>
+        <input type="text" name="rank" id="edit-rank" class="input-field" required>
+      </div>
+      <div class="form-group">
+        <label>Health:</label>
+        <input type="text" name="health" id="edit-health" class="input-field" required>
+      </div>
+      <button type="submit" class="save-button">Save Changes</button>
+    </form>
+    <button id="editModal-close" class="close-button" onclick="closeEditModal()">Close</button>
+  </div>
+
+  <script>
+    window.onload = () => {
+      const params = new URLSearchParams(window.location.search);
+      if (params.get('success') === 'true') {
+        const notification = document.getElementById('notification');
+        notification.style.display = 'block';
+        setTimeout(() => {
+          notification.style.display = 'none';
+        }, 3000);
+      }
+      loadPersonnelData();
+    };
+
+    async function loadPersonnelData() {
+      const tableBody = document.querySelector('#personnelTable');
+      tableBody.innerHTML = '';
+      try {
+        const response = await fetch('/admin/personnel');
+        const data = await response.json();
+        data.forEach(person => addPersonnelToTable(person));
+      } catch (error) {
+        console.error('Error loading personnel:', error);
+      }
+    }
+
+    function addPersonnelToTable(person) {
+      const tableBody = document.querySelector('#personnelTable');
+      const row = document.createElement('tr');
+      row.innerHTML = `
+        <td>${person.name}</td>
+        <td>${person.surname}</td>
+        <td>${person.unit}</td>
+        <td>${person.rank}</td>
+        <td>
+          <button class="button" onclick="viewDetails('${person._id}')">View Details</button>
+          <button class="button" onclick="editPersonnel('${person._id}')">Edit</button>
+          <button class="button" onclick="deletePersonnel('${person._id}')">Delete</button>
+        </td>
+      `;
+      tableBody.appendChild(row);
+    }
+
+    async function deletePersonnel(id) {
+      if (confirm('Are you sure you want to delete this personnel?')) {
+        try {
+          const response = await fetch(`/admin/personnel/${id}`, { method: 'DELETE' });
+          if (response.ok) {
+            alert('Personnel deleted successfully');
+            loadPersonnelData();
+          } else {
+            const error = await response.json();
+            alert(`Error: ${error.message}`);
+          }
+        } catch (error) {
+          console.error('Error deleting personnel:', error);
+        }
+      }
+    }
+
+    async function viewDetails(id) {
+      fetch(`/personnel/${id}`)
+        .then(response => response.json())
+        .then(async person => {
+          document.getElementById('modal-content').innerHTML = `
+            <h2>${person.name} ${person.surname}</h2>
+            <p>Gender: ${person.gender}</p>
+            <p>Birthday: ${new Date(person.birthday).toLocaleDateString()}</p>
+            <p>Unit: ${person.unit}</p>
+            <p>Rank: ${person.rank}</p>
+            <p>Health: ${person.health}</p>
+          `;
+
+          // Загрузка комментариев
+          const notesResponse = await fetch(`/personnel/${id}/notes`);
+          const notes = await notesResponse.json();
+
+          const notesList = document.getElementById('notesList');
+          notesList.innerHTML = '';
+          notes.forEach(note => {
+            const listItem = document.createElement('li');
+            listItem.textContent = `[${new Date(note.date).toLocaleString()}] ${note.admin}: ${note.text}`;
+            notesList.appendChild(listItem);
+          });
+
+          document.getElementById('addNoteForm').onsubmit = (e) => addNoteToPersonnel(e, id);
+          document.getElementById('modal').style.display = 'block';
+        })
+        .catch(error => console.error('Error fetching details:', error));
+    }
+
+    async function addNoteToPersonnel(event, id) {
+      event.preventDefault();
+      const noteText = document.getElementById('noteText').value;
+      const adminName = document.getElementById('adminName').value;
+
+      try {
+        const response = await fetch(`/personnel/${id}/notes`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ text: noteText, admin: adminName }),
+        });
+
+        if (response.ok) {
+          alert('Note added successfully');
+          viewDetails(id); // Перезагрузить детали с обновлёнными комментариями
+        } else {
+          const error = await response.json();
+          alert(`Error: ${error.message}`);
+        }
+      } catch (error) {
+        console.error('Error adding note:', error);
+      }
+    }
+
+    function closeModal() {
+      document.getElementById('modal').style.display = 'none';
+    }
+
+    function editPersonnel(id) {
+      fetch(`/personnel/${id}`)
+        .then(response => response.json())
+        .then(person => {
+          document.getElementById('edit-id').value = person._id;
+          document.getElementById('edit-name').value = person.name;
+          document.getElementById('edit-surname').value = person.surname;
+          document.getElementById('edit-gender').value = person.gender;
+          document.getElementById('edit-birthday').value = person.birthday;
+          document.getElementById('edit-unit').value = person.unit;
+          document.getElementById('edit-rank').value = person.rank;
+          document.getElementById('edit-health').value = person.health;
+          document.getElementById('editModal').style.display = 'block';
+        })
+        .catch(error => console.error('Error loading edit data:', error));
+    }
+
+    async function updatePersonnel(event) {
+      event.preventDefault();
+      const formData = new FormData(event.target);
+      const updatedData = Object.fromEntries(formData.entries());
+
+      try {
+        const response = await fetch(`/admin/personnel/${updatedData.id}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(updatedData),
+        });
+
+        if (response.ok) {
+          alert('Personnel updated successfully');
+          closeEditModal();
+          loadPersonnelData();
+        } else {
+          throw new Error('Update failed');
+        }
+      } catch (error) {
+        console.error('Error updating personnel:', error);
+      }
+    }
+
+    function closeEditModal() {
+      document.getElementById('editModal').style.display = 'none';
+    }
+    // Function to filter personnel based on search input
+    function searchPersonnel() {
+      const searchQuery = document.getElementById('searchInput').value.toLowerCase();
+      const tableRows = document.querySelectorAll('#personnelTable tr');
+      tableRows.forEach(row => {
+        const name = row.cells[0].textContent.toLowerCase();
+        const surname = row.cells[1].textContent.toLowerCase();
+        if (name.includes(searchQuery) || surname.includes(searchQuery)) {
+          row.style.display = '';
+        } else {
+          row.style.display = 'none';
+        }
+      });
+    }
+  </script>
+  
+</body>
+</html>

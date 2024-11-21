@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Personnel Detail</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background-color: #f0f8ff;
+      padding: 20px;
+    }
+    h1 {
+      text-align: center;
+      color: #004d40;
+    }
+    .personnel-detail {
+      padding: 20px;
+      background-color: #ffffff;
+      border-radius: 8px;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+      margin-top: 20px;
+      max-width: 800px;
+      margin-left: auto;
+      margin-right: auto;
+    }
+    .personnel-detail h2 {
+      color: #004d40;
+    }
+    .back-btn {
+      display: inline-block;
+      background-color: #00796b;
+      color: white;
+      padding: 10px 20px;
+      text-decoration: none;
+      border-radius: 5px;
+      text-align: center;
+      margin-top: 20px;
+    }
+    .back-btn:hover {
+      background-color: #004d40;
+    }
+    .comment-section {
+      margin-top: 30px;
+    }
+    .comment {
+      background-color: #e0f2f1;
+      padding: 10px;
+      margin-bottom: 10px;
+      border-radius: 5px;
+    }
+    .comment p {
+      margin: 0;
+    }
+  </style>
+</head>
+<body>
+  <h1>Personnel Details</h1>
+  <div id="personnelDetail" class="personnel-detail">
+    <!-- Детали персонала будут загружены сюда -->
+  </div>
+
+  <!-- Комментарии для просмотра -->
+  <div class="comment-section" id="commentsSection">
+    <h3>Admin Comments:</h3>
+    <div id="commentsList"></div>
+  </div>
+
+  <a href="/dashboard" class="back-btn">Back to Personnel List</a>
+
+  <script>
+    async function fetchPersonnelDetail() {
+      const personId = window.location.pathname.split('/').pop();
+      try {
+        const response = await fetch(`/personnel/${personId}`);
+        const person = await response.json();
+
+        const detailDiv = document.getElementById('personnelDetail');
+        detailDiv.innerHTML = `
+          <h2>${person.name} ${person.surname}</h2>
+          <p><strong>Gender:</strong> ${person.gender}</p>
+          <p><strong>Birthday:</strong> ${new Date(person.birthday).toLocaleDateString()}</p>
+          <p><strong>Unit:</strong> ${person.unit}</p>
+          <p><strong>Rank:</strong> ${person.rank}</p>
+          <p><strong>Health Status:</strong> ${person.health}</p>
+        `;
+
+        // Загружаем комментарии
+        const commentsResponse = await fetch(`/personnel/${personId}/notes`);
+        const comments = await commentsResponse.json();
+
+        const commentsList = document.getElementById('commentsList');
+        commentsList.innerHTML = '';
+        comments.forEach(comment => {
+          const commentDiv = document.createElement('div');
+          commentDiv.classList.add('comment');
+          commentDiv.innerHTML = `
+            <p><strong>[${new Date(comment.date).toLocaleString()}]</strong> ${comment.admin}: ${comment.text}</p>
+          `;
+          commentsList.appendChild(commentDiv);
+        });
+
+      } catch (error) {
+        console.error('Error fetching personnel details:', error);
+      }
+    }
+
+    window.onload = fetchPersonnelDetail;
+  </script>
+</body>
+</html>

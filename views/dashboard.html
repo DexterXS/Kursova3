@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dashboard</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background-color: #f0f8ff;
+      padding: 20px;
+    }
+    h1 {
+      text-align: center;
+      color: #004d40;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 20px;
+    }
+    th {
+      background-color: #00796b;
+      color: white;
+      padding: 10px;
+    }
+    td {
+      padding: 10px;
+      text-align: center;
+    }
+    tr:nth-child(even) {
+      background-color: #e0f2f1;
+    }
+    .button {
+      background-color: #00796b;
+      color: white;
+      padding: 5px 10px;
+      border: none;
+      cursor: pointer;
+    }
+    .button:hover {
+      background-color: #004d40;
+    }
+    #modal {
+      display: none;
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      background-color: white;
+      padding: 20px;
+      border: 1px solid #ccc;
+      box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+      z-index: 1000;
+    }
+    #modal-close {
+      margin-top: 10px;
+      background-color: #00796b;
+      color: white;
+      padding: 5px 10px;
+      cursor: pointer;
+    }
+    #notesList {
+      list-style-type: none;
+      padding-left: 0;
+    }
+    #notesList li {
+      margin: 5px 0;
+    }
+    .search-box {
+      text-align: center;
+      margin-bottom: 20px;
+    }
+  </style>
+</head>
+<body>
+  <h1>Dashboard - Personnel Information</h1>
+
+  <!-- Search Box -->
+  <div class="search-box">
+    <input type="text" id="searchInput" placeholder="Search by name or surname" onkeyup="searchPersonnel()">
+  </div>
+
+  <table>
+    <thead>
+      <tr>
+        <th>Name</th>
+        <th>Surname</th>
+        <th>Unit</th>
+        <th>Rank</th>
+        <th>Actions</th>
+      </tr>
+    </thead>
+    <tbody id="personnelTable"></tbody>
+  </table>
+
+  <!-- Modal for Viewing Personnel Details -->
+  <div id="modal">
+    <div id="modal-content"></div>
+    <h3>Notes:</h3>
+    <ul id="notesList"></ul>
+    <button id="modal-close" class="button" onclick="closeModal()">Close</button>
+  </div>
+
+  <script>
+    window.onload = () => {
+      loadPersonnelData();
+    };
+
+    // Function to load personnel data from the server
+    async function loadPersonnelData() {
+      const tableBody = document.querySelector('#personnelTable');
+      tableBody.innerHTML = '';  // Clear any previous table content
+      try {
+        const response = await fetch('/admin/personnel');
+        const data = await response.json();
+        data.forEach(person => addPersonnelToTable(person));
+      } catch (error) {
+        console.error('Error loading personnel:', error);
+      }
+    }
+
+    // Function to add personnel to the table
+    function addPersonnelToTable(person) {
+      const tableBody = document.querySelector('#personnelTable');
+      const row = document.createElement('tr');
+      row.innerHTML = `
+        <td>${person.name}</td>
+        <td>${person.surname}</td>
+        <td>${person.unit}</td>
+        <td>${person.rank}</td>
+        <td>
+          <button class="button" onclick="viewDetails('${person._id}')">View Details</button>
+        </td>
+      `;
+      tableBody.appendChild(row);
+    }
+
+    // Function to view details of a specific personnel
+    async function viewDetails(id) {
+      try {
+        const response = await fetch(`/personnel/${id}`);
+        const person = await response.json();
+
+        document.getElementById('modal-content').innerHTML = `
+          <h2>${person.name} ${person.surname}</h2>
+          <p>Gender: ${person.gender}</p>
+          <p>Birthday: ${new Date(person.birthday).toLocaleDateString()}</p>
+          <p>Unit: ${person.unit}</p>
+          <p>Rank: ${person.rank}</p>
+          <p>Health: ${person.health}</p>
+        `;
+
+        // Load notes related to this personnel
+        const notesResponse = await fetch(`/personnel/${id}/notes`);
+        const notes = await notesResponse.json();
+
+        const notesList = document.getElementById('notesList');
+        notesList.innerHTML = '';  // Clear previous notes
+        notes.forEach(note => {
+          const listItem = document.createElement('li');
+          listItem.textContent = `[${new Date(note.date).toLocaleString()}] ${note.admin}: ${note.text}`;
+          notesList.appendChild(listItem);
+        });
+
+        // Display the modal with details
+        document.getElementById('modal').style.display = 'block';
+      } catch (error) {
+        console.error('Error fetching personnel details:', error);
+      }
+    }
+
+    // Close the modal
+    function closeModal() {
+      document.getElementById('modal').style.display = 'none';
+    }
+
+    // Function to filter personnel based on search input
+    function searchPersonnel() {
+      const searchQuery = document.getElementById('searchInput').value.toLowerCase();
+      const tableRows = document.querySelectorAll('#personnelTable tr');
+      tableRows.forEach(row => {
+        const name = row.cells[0].textContent.toLowerCase();
+        const surname = row.cells[1].textContent.toLowerCase();
+        if (name.includes(searchQuery) || surname.includes(searchQuery)) {
+          row.style.display = '';
+        } else {
+          row.style.display = 'none';
+        }
+      });
+    }
+  </script>
+</body>
+</html>
+
+
+
+
+
+
