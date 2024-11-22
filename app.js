@@ -12,7 +12,7 @@ app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 
 // Подключение к MongoDB
-const dbURI = 'mongodb+srv://salnikolyasik:RyveZrTeC5TAziNT@cluster0.88buj.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0';
+const dbURI = 'mongodb+srv://salnikolyasik:root@cluster0.88buj.mongodb.net/';
 mongoose.connect(dbURI, { useNewUrlParser: true, useUnifiedTopology: true })
   .then(() => console.log('Connected to MongoDB'))
   .catch((err) => console.error('MongoDB connection error:', err));

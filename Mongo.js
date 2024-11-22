@@ -1,7 +1,7 @@
 const mongoose = require('mongoose');
 
 // Подключение к MongoDB
-const dbURI = 'mongodb://localhost:27017/mydatabase';
+const dbURI = 'mongodb+srv://salnikolyasik:root@cluster0.88buj.mongodb.net/';
 mongoose.connect(dbURI)
   .then(() => {
     console.log('Connected to MongoDB');
