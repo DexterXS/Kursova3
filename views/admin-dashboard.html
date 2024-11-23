@@ -53,6 +53,9 @@
       border: 1px solid #ccc;
       box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
       z-index: 1000;
+      width: 60%;
+      max-height: 80%;
+      overflow-y: auto;
     }
     #modal-close, #editModal-close {
       margin-top: 10px;
@@ -68,24 +71,23 @@
     #notesList li {
       margin: 5px 0;
     }
+    textarea {
+      width: 100%;
+      margin-top: 10px;
+    }
   </style>
 </head>
 <body>
   <h1>Admin Dashboard - Personnel Information</h1>
 
-
-  <!-- Уведомление -->
   <div id="notification" style="display: none; background-color: #4caf50; color: white; padding: 10px; margin-bottom: 20px; text-align: center;">
     Personnel added successfully!
   </div>
 
-   
-
-<!-- Search Box -->
-<div class="search-box">
-  <input type="text" id="searchInput" placeholder="Search by name or surname" onkeyup="searchPersonnel()">
-</div>
-
+  <!-- Search Box -->
+  <div class="search-box">
+    <input type="text" id="searchInput" placeholder="Search by name or surname" onkeyup="searchPersonnel()">
+  </div>
 
   <button class="button" onclick="window.location.href = '/admin/add-personnel'">Add New Personnel</button>
   <table>
@@ -100,11 +102,21 @@
     </thead>
     <tbody id="personnelTable"></tbody>
   </table>
-  
 
+  <!-- Modal for Viewing Details -->
+  <div id="modal">
+    <div id="modal-content"></div>
+    <h3>Notes:</h3>
+    <ul id="notesList"></ul>
+    <form id="addNoteForm">
+      <textarea id="noteText" rows="4" placeholder="Add a note..." required></textarea>
+      <input type="text" id="adminName" placeholder="Admin Name" required>
+      <button type="submit" class="button">Add Note</button>
+    </form>
+    <button id="modal-close" class="button" onclick="closeModal()">Close</button>
+  </div>
 
-   
-
+  <!-- Modal for Editing -->
   <div id="editModal">
     <h2>Edit Personnel</h2>
     <form id="editPersonnelForm" onsubmit="updatePersonnel(event)">
@@ -139,19 +151,11 @@
       </div>
       <button type="submit" class="save-button">Save Changes</button>
     </form>
-    <button id="editModal-close" class="close-button" onclick="closeEditModal()">Close</button>
+    <button id="editModal-close" class="button" onclick="closeEditModal()">Close</button>
   </div>
 
   <script>
     window.onload = () => {
-      const params = new URLSearchParams(window.location.search);
-      if (params.get('success') === 'true') {
-        const notification = document.getElementById('notification');
-        notification.style.display = 'block';
-        setTimeout(() => {
-          notification.style.display = 'none';
-        }, 3000);
-      }
       loadPersonnelData();
     };
 
@@ -184,52 +188,38 @@
       tableBody.appendChild(row);
     }
 
-    async function deletePersonnel(id) {
-      if (confirm('Are you sure you want to delete this personnel?')) {
-        try {
-          const response = await fetch(`/admin/personnel/${id}`, { method: 'DELETE' });
-          if (response.ok) {
-            alert('Personnel deleted successfully');
-            loadPersonnelData();
-          } else {
-            const error = await response.json();
-            alert(`Error: ${error.message}`);
-          }
-        } catch (error) {
-          console.error('Error deleting personnel:', error);
-        }
-      }
-    }
-
     async function viewDetails(id) {
-      fetch(`/personnel/${id}`)
-        .then(response => response.json())
-        .then(async person => {
-          document.getElementById('modal-content').innerHTML = `
-            <h2>${person.name} ${person.surname}</h2>
-            <p>Gender: ${person.gender}</p>
-            <p>Birthday: ${new Date(person.birthday).toLocaleDateString()}</p>
-            <p>Unit: ${person.unit}</p>
-            <p>Rank: ${person.rank}</p>
-            <p>Health: ${person.health}</p>
-          `;
+      try {
+        const response = await fetch(`/personnel/${id}`);
+        if (!response.ok) throw new Error('Failed to fetch personnel details');
+        const person = await response.json();
 
-          // Загрузка комментариев
-          const notesResponse = await fetch(`/personnel/${id}/notes`);
-          const notes = await notesResponse.json();
+        document.getElementById('modal-content').innerHTML = `
+          <h2>${person.name} ${person.surname}</h2>
+          <p>Gender: ${person.gender}</p>
+          <p>Birthday: ${new Date(person.birthday).toLocaleDateString()}</p>
+          <p>Unit: ${person.unit}</p>
+          <p>Rank: ${person.rank}</p>
+          <p>Health: ${person.health}</p>
+        `;
 
-          const notesList = document.getElementById('notesList');
-          notesList.innerHTML = '';
-          notes.forEach(note => {
-            const listItem = document.createElement('li');
-            listItem.textContent = `[${new Date(note.date).toLocaleString()}] ${note.admin}: ${note.text}`;
-            notesList.appendChild(listItem);
-          });
+        const notesResponse = await fetch(`/personnel/${id}/notes`);
+        const notes = await notesResponse.json();
 
-          document.getElementById('addNoteForm').onsubmit = (e) => addNoteToPersonnel(e, id);
-          document.getElementById('modal').style.display = 'block';
-        })
-        .catch(error => console.error('Error fetching details:', error));
+        const notesList = document.getElementById('notesList');
+        notesList.innerHTML = '';
+        notes.forEach(note => {
+          const listItem = document.createElement('li');
+          listItem.textContent = `[${new Date(note.date).toLocaleString()}] ${note.admin}: ${note.text}`;
+          notesList.appendChild(listItem);
+        });
+
+        document.getElementById('addNoteForm').onsubmit = (e) => addNoteToPersonnel(e, id);
+
+        document.getElementById('modal').style.display = 'block';
+      } catch (error) {
+        console.error('Error fetching details:', error);
+      }
     }
 
     async function addNoteToPersonnel(event, id) {
@@ -246,7 +236,7 @@
 
         if (response.ok) {
           alert('Note added successfully');
-          viewDetails(id); // Перезагрузить детали с обновлёнными комментариями
+          viewDetails(id);
         } else {
           const error = await response.json();
           alert(`Error: ${error.message}`);
@@ -256,25 +246,25 @@
       }
     }
 
-    function closeModal() {
-      document.getElementById('modal').style.display = 'none';
-    }
+    async function editPersonnel(id) {
+      try {
+        const response = await fetch(`/personnel/${id}`);
+        if (!response.ok) throw new Error('Failed to fetch personnel data');
+        const person = await response.json();
 
-    function editPersonnel(id) {
-      fetch(`/personnel/${id}`)
-        .then(response => response.json())
-        .then(person => {
-          document.getElementById('edit-id').value = person._id;
-          document.getElementById('edit-name').value = person.name;
-          document.getElementById('edit-surname').value = person.surname;
-          document.getElementById('edit-gender').value = person.gender;
-          document.getElementById('edit-birthday').value = person.birthday;
-          document.getElementById('edit-unit').value = person.unit;
-          document.getElementById('edit-rank').value = person.rank;
-          document.getElementById('edit-health').value = person.health;
-          document.getElementById('editModal').style.display = 'block';
-        })
-        .catch(error => console.error('Error loading edit data:', error));
+        document.getElementById('edit-id').value = person._id;
+        document.getElementById('edit-name').value = person.name;
+        document.getElementById('edit-surname').value = person.surname;
+        document.getElementById('edit-gender').value = person.gender;
+        document.getElementById('edit-birthday').value = person.birthday;
+        document.getElementById('edit-unit').value = person.unit;
+        document.getElementById('edit-rank').value = person.rank;
+        document.getElementById('edit-health').value = person.health;
+
+        document.getElementById('editModal').style.display = 'block';
+      } catch (error) {
+        console.error('Error loading edit data:', error);
+      }
     }
 
     async function updatePersonnel(event) {
@@ -301,10 +291,31 @@
       }
     }
 
+    async function deletePersonnel(id) {
+      if (confirm('Are you sure you want to delete this personnel?')) {
+        try {
+          const response = await fetch(`/admin/personnel/${id}`, { method: 'DELETE' });
+          if (response.ok) {
+            alert('Personnel deleted successfully');
+            loadPersonnelData();
+          } else {
+            const error = await response.json();
+            alert(`Error: ${error.message}`);
+          }
+        } catch (error) {
+          console.error('Error deleting personnel:', error);
+        }
+      }
+    }
+
+    function closeModal() {
+      document.getElementById('modal').style.display = 'none';
+    }
+
     function closeEditModal() {
       document.getElementById('editModal').style.display = 'none';
     }
-    // Function to filter personnel based on search input
+
     function searchPersonnel() {
       const searchQuery = document.getElementById('searchInput').value.toLowerCase();
       const tableRows = document.querySelectorAll('#personnelTable tr');
@@ -319,6 +330,6 @@
       });
     }
   </script>
-  
 </body>
 </html>
+
