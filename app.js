@@ -387,11 +387,10 @@ app.delete('/admin/users/:id', async (req, res) => {
 
 
 // Запуск сервера
-const port = 3000;
-app.listen(port, () => {
-  console.log(`Server is running on http://localhost:${port}`);
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => {
+  console.log(`Server is running on port ${PORT}`);
 });
-
 
 
 
